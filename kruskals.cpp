@@ -1,159 +1,93 @@
-// C++ program for Kruskal's algorithm to find Minimum
-// Spanning Tree of a given connected, undirected and
-// weighted graph
-#include<bits/stdc++.h>
+// Kruskal's algorithm in C++
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
 using namespace std;
 
-// Creating shortcut for an integer pair
-typedef pair<int, int> iPair;
+#define edge pair<int, int>
 
-// Structure to represent a graph
-struct Graph
-{
-	int V, E;
-	vector< pair<int, iPair> > edges;
-
-	// Constructor
-	Graph(int V, int E)
-	{
-		this->V = V;
-		this->E = E;
-	}
-
-	// Utility function to add an edge
-	void addEdge(int u, int v, int w)
-	{
-		edges.push_back({w, {u, v}});
-	}
-
-	// Function to find MST using Kruskal's
-	// MST algorithm
-	int kruskalMST();
+class Graph {
+   private:
+  vector<pair<int, edge> > G;  // graph
+  vector<pair<int, edge> > T;  // mst
+  int *parent;
+  int V;  // number of vertices/nodes in graph
+   public:
+  Graph(int V);
+  void AddWeightedEdge(int u, int v, int w);
+  int find_set(int i);
+  void union_set(int u, int v);
+  void kruskal();
+  void print();
 };
+Graph::Graph(int V) {
+  parent = new int[V];
 
-// To represent Disjoint Sets
-struct DisjointSets
-{
-	int *parent, *rnk;
-	int n;
+  //i 0 1 2 3 4 5
+  //parent[i] 0 1 2 3 4 5
+  for (int i = 0; i < V; i++)
+    parent[i] = i;
 
-	// Constructor.
-	DisjointSets(int n)
-	{
-		// Allocate memory
-		this->n = n;
-		parent = new int[n+1];
-		rnk = new int[n+1];
-
-		// Initially, all vertices are in
-		// different sets and have rank 0.
-		for (int i = 0; i <= n; i++)
-		{
-			rnk[i] = 0;
-
-			//every element is parent of itself
-			parent[i] = i;
-		}
-	}
-
-	// Find the parent of a node 'u'
-	// Path Compression
-	int find(int u)
-	{
-		/* Make the parent of the nodes in the path
-		from u--> parent[u] point to parent[u] */
-		if (u != parent[u])
-			parent[u] = find(parent[u]);
-		return parent[u];
-	}
-
-	// Union by rank
-	void merge(int x, int y)
-	{
-		x = find(x), y = find(y);
-
-		/* Make tree with smaller height
-		a subtree of the other tree */
-		if (rnk[x] > rnk[y])
-			parent[y] = x;
-		else // If rnk[x] <= rnk[y]
-			parent[x] = y;
-
-		if (rnk[x] == rnk[y])
-			rnk[y]++;
-	}
-};
-
-/* Functions returns weight of the MST*/
-
-int Graph::kruskalMST()
-{
-	int mst_wt = 0; // Initialize result
-
-	// Sort edges in increasing order on basis of cost
-	sort(edges.begin(), edges.end());
-
-	// Create disjoint sets
-	DisjointSets ds(V);
-
-	// Iterate through all sorted edges
-	vector< pair<int, iPair> >::iterator it;
-	for (it=edges.begin(); it!=edges.end(); it++)
-	{
-		int u = it->second.first;
-		int v = it->second.second;
-
-		int set_u = ds.find(u);
-		int set_v = ds.find(v);
-
-		// Check if the selected edge is creating
-		// a cycle or not (Cycle is created if u
-		// and v belong to same set)
-		if (set_u != set_v)
-		{
-			// Current edge will be in the MST
-			// so print it
-			cout << u << " - " << v << endl;
-
-			// Update MST weight
-			mst_wt += it->first;
-
-			// Merge two sets
-			ds.merge(set_u, set_v);
-		}
-	}
-
-	return mst_wt;
+  G.clear();
+  T.clear();
+}
+void Graph::AddWeightedEdge(int u, int v, int w) {
+  G.push_back(make_pair(w, edge(u, v)));
+}
+int Graph::find_set(int i) {
+  // If i is the parent of itself
+  if (i == parent[i])
+    return i;
+  else
+    // Else if i is not the parent of itself
+    // Then i is not the representative of his set,
+    // so we recursively call Find on its parent
+    return find_set(parent[i]);
 }
 
-// Driver program to test above functions
-int main()
-{
-	/* Let us create above shown weighted
-	and undirected graph */
-	int V = 9, E = 14;
-	Graph g(V, E);
-
-	// making above shown graph
-	g.addEdge(0, 1, 4);
-	g.addEdge(0, 7, 8);
-	g.addEdge(1, 2, 8);
-	g.addEdge(1, 7, 11);
-	g.addEdge(2, 3, 7);
-	g.addEdge(2, 8, 2);
-	g.addEdge(2, 5, 4);
-	g.addEdge(3, 4, 9);
-	g.addEdge(3, 5, 14);
-	g.addEdge(4, 5, 10);
-	g.addEdge(5, 6, 2);
-	g.addEdge(6, 7, 1);
-	g.addEdge(6, 8, 6);
-	g.addEdge(7, 8, 7);
-
-	cout << "Edges of MST are \n";
-	int mst_wt = g.kruskalMST();
-
-	cout << "\nWeight of MST is " << mst_wt;
-
-	return 0;
+void Graph::union_set(int u, int v) {
+  parent[u] = parent[v];
+}
+void Graph::kruskal() {
+  int i, uRep, vRep;
+  sort(G.begin(), G.end());  // increasing weight
+  for (i = 0; i < G.size(); i++) {
+    uRep = find_set(G[i].second.first);
+    vRep = find_set(G[i].second.second);
+    if (uRep != vRep) {
+      T.push_back(G[i]);  // add to tree
+      union_set(uRep, vRep);
+    }
+  }
+}
+void Graph::print() {
+  cout << "Edge :"
+     << " Weight" << endl;
+  for (int i = 0; i < T.size(); i++) {
+    cout << T[i].second.first << " - " << T[i].second.second << " : "
+       << T[i].first;
+    cout << endl;
+  }
+}
+int main() {
+  Graph g(6);
+  g.AddWeightedEdge(0, 1, 4);
+  g.AddWeightedEdge(0, 2, 4);
+  g.AddWeightedEdge(1, 2, 2);
+  g.AddWeightedEdge(1, 0, 4);
+  g.AddWeightedEdge(2, 0, 4);
+  g.AddWeightedEdge(2, 1, 2);
+  g.AddWeightedEdge(2, 3, 3);
+  g.AddWeightedEdge(2, 5, 2);
+  g.AddWeightedEdge(2, 4, 4);
+  g.AddWeightedEdge(3, 2, 3);
+  g.AddWeightedEdge(3, 4, 3);
+  g.AddWeightedEdge(4, 2, 4);
+  g.AddWeightedEdge(4, 3, 3);
+  g.AddWeightedEdge(5, 2, 2);
+  g.AddWeightedEdge(5, 4, 3);
+  g.kruskal();
+  g.print();
+  return 0;
 }
